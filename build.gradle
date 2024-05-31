@@ -1,105 +1,96 @@
 plugins {
-	id "architectury-plugin" version "3.4-SNAPSHOT"
-	// https://maven.architectury.dev/dev/architectury/loom/dev.architectury.loom.gradle.plugin/
-	id "dev.architectury.loom" version "1.5-SNAPSHOT" apply false
+    id "architectury-plugin" version "3.4-SNAPSHOT"
+    id "dev.architectury.loom" version "1.6.397" apply false
 }
+
 architectury {
-	minecraft = minecraft_version
+    minecraft = minecraft_version
 }
+
 subprojects {
-	apply plugin: "dev.architectury.loom"
-	loom {
-		silentMojangMappingsLicense()
-	}
-	dependencies {
-		minecraft "com.mojang:minecraft:1.20.6"
-		mappings loom.officialMojangMappings()
+    apply plugin: "dev.architectury.loom"
+    loom {
+        silentMojangMappingsLicense()
+    }
+    dependencies {
+        minecraft "com.mojang:minecraft:1.20.6"
+        mappings loom.officialMojangMappings()
 
-		// Fabric Loader
-		modImplementation "net.fabricmc:fabric-loader:0.15.11"
+        // Fabric Loader
+        modImplementation "net.fabricmc:fabric-loader:0.15.11"
 
-		// Fabric API
-		modImplementation "net.fabricmc.fabric-api:fabric-api:0.99.4+1.20.6"
-	}
-	processResources {
-		eachFile {
-			expand rootProject.properties
-		}
-	}
+        // Fabric API
+        modImplementation "net.fabricmc.fabric-api:fabric-api:0.99.4+1.20.6"
+    }
+    processResources {
+        eachFile {
+            expand rootProject.properties
+        }
+    }
 }
+
 allprojects {
-	apply plugin: "java"
-	apply plugin: "architectury-plugin"
-	apply plugin: "maven-publish"
-	base {
-		archivesName = mod_id
-	}
-	version = mod_version
-	group = mod_group_id
-	repositories {
-		mavenLocal()
-		mavenCentral()
-		maven {
-			url "https://jitpack.io"
-		}
-		// Cloth Config API
-		maven {
-			url "https://maven.shedaniel.me/"
-		}
-		// YACL
-		maven {
-			url "https://maven.isxander.dev/releases"
-		}
-		maven {
-			url "https://maven.quiltmc.org/repository/release"
-		}
-		maven {
-			url "https://oss.sonatype.org/content/repositories/snapshots"
-		}
-		// Mod Menu
-		maven {
-			url "https://maven.terraformersmc.com/releases"
-		}
-		// Modrinth
-		gradlePluginPortal()
-	}
-	tasks.withType(JavaCompile).configureEach {
-		options.encoding = "UTF-8"
-		options.release = JavaLanguageVersion.of(java_version).asInt()
-	}
-	java {
-		withSourcesJar()
-	}
-	jar {
-		setDuplicatesStrategy DuplicatesStrategy.INCLUDE
-		from rootProject.file("LICENSE.txt")
-	}
+    apply plugin: "java"
+    apply plugin: "architectury-plugin"
+    apply plugin: "maven-publish"
+    base {
+        archivesName = mod_id
+    }
+    version = mod_version
+    group = mod_group_id
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven { url "https://jitpack.io" }
+        maven { url "https://maven.shedaniel.me/" } // Cloth Config API
+        maven { url "https://maven.isxander.dev/releases" } // YACL
+        maven { url "https://maven.quiltmc.org/repository/release" }
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+        maven { url "https://maven.terraformersmc.com/releases" } // Mod Menu
+        gradlePluginPortal() // Modrinth
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = "UTF-8"
+        options.release = 21
+    }
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+        withSourcesJar()
+    }
+    jar {
+        setDuplicatesStrategy DuplicatesStrategy.INCLUDE
+        from rootProject.file("LICENSE.txt")
+    }
 }
 
 // 生成文件名格式
 String archiveFileNameOfPlatform(String platform) {
-	String[] platforms = enabled_platforms.split(",").each {
-		it.trim()
-	}
-	if (!platforms.contains(platform)) {
-		throw new IllegalArgumentException("Unknown platform: ${platform}")
-	}
-	return "${mod_id}-v${mod_version}-mc${minecraft_version}-${platform}"
+    String[] platforms = enabled_platforms.split(",").each {
+        it.trim()
+    }
+    if (!platforms.contains(platform)) {
+        throw new IllegalArgumentException("Unknown platform: ${platform}")
+    }
+    return "${mod_id}-v${mod_version}-mc${minecraft_version}-${platform}"
 }
 
 // 读取更新日志
 String readChangeLog() {
-	File changelogFile = getProjectDir().toPath().resolve("changelog_latest.md").toFile()
-	return changelogFile.canRead() ? changelogFile.text : "No changelog"
+    File changelogFile = getProjectDir().toPath().resolve("changelog_latest.md").toFile()
+    return changelogFile.canRead() ? changelogFile.text : "No changelog"
 }
 
 tasks.register("testBuild") {
-	println "<<< Testing build scripts >>>"
-	println "Enabled platforms: ${enabled_platforms}"
-	println "Archive file name for each platform:"
-	enabled_platforms.split(",").each {
-		println "\t$it: ${archiveFileNameOfPlatform(it)}"
-	}
-	println "\tModrinth API key exists: ${System.getenv("MODRINTH_TOKEN") != null}"
-	println "Changelog: ${readChangeLog().replaceAll("^|\n", "\n\t")}"
+    println "<<< Testing build scripts >>>"
+    println "Enabled platforms: ${enabled_platforms}"
+    println "Archive file name for each platform:"
+    enabled_platforms.split(",").each {
+        println "\t$it: ${archiveFileNameOfPlatform(it)}"
+    }
+    println "\tModrinth API key exists: ${System.getenv("MODRINTH_TOKEN") != null}"
+    println "Changelog: ${readChangeLog().replaceAll("^|\n", "\n\t")}"
 }
